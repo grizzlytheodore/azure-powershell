@@ -39,11 +39,18 @@ function Create-Cluster{
       [string] $resourceGroupName="group-ps-test",
       [string] $clusterType="Spark",
       [string] $storageAccountName="storagepstest",
-      [string] $minSupportedTlsVersion="1.2"
+      [string] $minSupportedTlsVersion="1.2",
+	  [string] $assignedIdentityName="ami-ps-test",
+	  [string] $vaultName="vault-ps-test",
+	  [string] $keyName="key-ps-test"
     )
 
     $clusterName=Generate-Name($clusterName)
     $resourceGroupName=Generate-Name($resourceGroupName)
+	$keyName=Generate-Name($keyName)
+	if($$vaultName -eq "vault-ps-test"){
+		$vaultName=Generate-Name()
+	}
 
     $resourceGroup=New-AzResourceGroup -Name $resourceGroupName -Location $location
 
@@ -53,6 +60,16 @@ function Create-Cluster{
 
     $storageAccountKey=Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName
     $storageAccountKey=$storageAccountKey[0].Value
+
+	$assignedIdentity=New-AzUserAssignedIdentity -ResourceGroupName $resourceGroupName -Name $assignedIdentityName
+	$assignedIdentityId=$assignedIdentity.Id
+
+	$encryptionKeyVault=New-AzKeyVault -VaultName $vaultName -ResourceGroupName $resourceGroupName -Location $location -EnableSoftDelete true
+	$encryptionKeyVault=Set-AzKeyVaultAccessPolicy -VaultName $vaultName -ObjectId $assignedIdentity.PrincipalId -PermissionsToSecrets Get,Set
+	$encryptionKey=Add-AzKeyVaultKey -VaultName $vaultName -Name $keyName -Destination 'Software'
+	$encryptionVaultUri=$encryptionKeyVault.VaultUri
+	$encryptionKeyVersion=$encryptionKey.Version
+	$encryptionKeyName=$encryptionKey.Name
 
     $httpUser="admin"
 	$textPassword= "YourPw!00953"
@@ -66,7 +83,9 @@ function Create-Cluster{
 
     $cluster=New-AzHDInsightCluster -Location $location -ResourceGroupName $resourceGroup.ResourceGroupName -ClusterName $clusterName `
              -ClusterSizeInNodes $clusterSizeInNodes -ClusterType $clusterType -DefaultStorageAccountName $storageAccountName `
-             -DefaultStorageAccountKey $storageAccountKey -HttpCredential $httpCredential -SshCredential $sshCredential -MinSupportedTlsVersion $minSupportedTlsVersion
+             -DefaultStorageAccountKey $storageAccountKey -HttpCredential $httpCredential -SshCredential $sshCredential -MinSupportedTlsVersion $minSupportedTlsVersion `
+			 -AssignedIdentity $assignedIdentityId -EncryptionKeyName $encryptionKeyName -EncryptionKeyVersion $encryptionKeyVersion `
+			 -EncryptionVaultUri $encryptionVaultUri
 
     return $cluster
 }

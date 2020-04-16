@@ -23,7 +23,9 @@ function Test-ClusterRelatedCommands{
 	try
 	{
 		# test create cluster
-		$cluster = Create-Cluster
+		$vaultName="vault-ps-test"
+		$vaultName=Generate-Name($vaultName)
+		$cluster = Create-Cluster -vaultName $vaultName
 		Assert-NotNull $cluster
 		
 		#test Get-AzHDInsightCluster
@@ -34,6 +36,18 @@ function Test-ClusterRelatedCommands{
 		$resizeCluster = Set-AzHDInsightClusterSize -ClusterName $cluster.Name -ResourceGroupName $cluster.ResourceGroup `
 		-TargetInstanceCount 3
 		Assert-AreEqual $resizeCluster.CoresUsed 20
+
+		#test Set-AzHDInsightClusterDiskEncryptionKey
+		$keyName="newkey-ps-test"
+		$keyName=Generate-Name($keyName)
+		$encryptionKeyVault=Get-AzKeyVault -VaultName $vaultName
+		$encryptionKey=Add-AzKeyVaultKey -VaultName $vaultName -Name $keyName -Destination 'Software'
+
+		$rotateKeyCluster = Set-AzHDInsightClusterDiskEncryptionKey -ClusterName $cluster.Name -ResourceGroupName $cluster.ResourceGroup `
+		-EncryptionKeyName $encryptionKey.Name -EncryptionKeyVersion $encryptionKey.Version -EncryptionVaultUri $encryptionKeyVault.VaultUri
+		
+		Assert-AreEqual $rotateKeyCluster.Properties.DiskEncryptionProperties.KeyVersion $encryptionKey.Version
+		Assert-AreEqual $rotateKeyCluster.Properties.DiskEncryptionProperties.KeyName $encryptionKey.KeyName
 	}
 	finally
 	{
