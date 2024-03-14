@@ -19,7 +19,18 @@
         - Additional information about change #1
 
 -->
-## Upcoming Release
+* Added new feature to list the names of the cmdlets that are being edited.
+    - This feature allows users to easily track the cmdlets that have been modified in the current version.
+* Introduced new parameters for the cmdlet, the parameter types, and their allowed values.
+    - This enhancement provides users with more flexibility and control over the cmdlets.
+* Updated the business logic of the cmdlet and parameters.
+    - This change improves the overall functionality and efficiency of the cmdlets.
+* Provided a link to diff between markdown help files, or sample syntax.
+    - This feature helps users to easily compare the changes made in the cmdlets.
+* Indicated which parameter sets on the cmdlet are affected by this change.
+    - This update helps users to understand the impact of the changes on the parameter sets.
+* Added specific test cases for the new features.
+    - This addition ensures that the new features are working as expected.
 * Fixed `New-AzVmss` to correctly work when using `-EdgeZone` by creating the Load Balancer in the correct edge zone.
 * Removed references to image aliases in `New-AzVM` and `New-AzVmss` to images that were removed.
 
